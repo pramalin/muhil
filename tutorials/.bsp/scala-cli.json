@@ -1,0 +1,20 @@
+{
+  "name": "scala-cli",
+  "argv": [
+    "/home/pramalin/.cache/scalacli/local-repo/bin/scala-cli/scala-cli",
+    "bsp",
+    "--json-options",
+    "/home/pramalin/work/muhil/muhil/.scala-build/ide-options-v2.json",
+    "--json-launcher-options",
+    "/home/pramalin/work/muhil/muhil/.scala-build/ide-launcher-options.json",
+    "--envs-file",
+    "/home/pramalin/work/muhil/muhil/.scala-build/ide-envs.json",
+    "/home/pramalin/work/muhil/muhil"
+  ],
+  "version": "1.12.2",
+  "bspVersion": "2.1.1",
+  "languages": [
+    "scala",
+    "java"
+  ]
+}
