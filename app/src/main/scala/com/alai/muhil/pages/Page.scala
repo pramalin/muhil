@@ -29,6 +29,7 @@ object Page {
         val JOBS             = "/jobs"
         val EMPTY            = ""
         val HOME             = "/"
+        val SIMULATOR        = "/simulator"
         val HASH             = "#"
         def JOB(id: String) = s"/jobs/$id"
     }
@@ -42,6 +43,7 @@ object Page {
             case Urls.PROFILE        => ProfilePage()
 //            case Urls.POST_JOB       => PostJobPage()
             case Urls.EMPTY | Urls.HOME | Urls.JOBS => HomePage()
+            case Urls.SIMULATOR => SimulatorPage()
 //            case s"/jobs/$id"           => JobPage(id)
             case _                      => NotFoundPage()
         }

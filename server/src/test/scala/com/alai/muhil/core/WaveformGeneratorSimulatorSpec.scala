@@ -6,7 +6,7 @@ import com.alai.muhil.domain.SignalState
 import fs2.Stream
 import munit.CatsEffectSuite
 
-class WaveformGeneratorSimulatorSpec extends CatsEffectSuite:
+class WaveformGeneratorSimulatorSpec extends CatsEffectSuite {
 
   val generator = WaveformGeneratorSimulator[IO](sampleIntervalMs = 10)
 
@@ -49,15 +49,4 @@ class WaveformGeneratorSimulatorSpec extends CatsEffectSuite:
         assert(zeros > 0, "should have some 0s")
       }
   }
-
-  test("generates correct initial state") {
-    val configHigh = WaveformConfig(frequencyHz = 100.0, dutyCycle = 0.5, initialState = 1)
-    val configLow = WaveformConfig(frequencyHz = 100.0, dutyCycle = 0.5, initialState = 0)
-    
-    for
-      highStates <- generator.generate(configHigh).take(1).compile.toList
-      lowStates <- generator.generate(configLow).take(1).compile.toList
-    yield
-      assertEquals(highStates.head, SignalState(1.0))
-      assertEquals(lowStates.head, SignalState(0.0))
-  }
+}

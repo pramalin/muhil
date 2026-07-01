@@ -252,3 +252,222 @@ The simulator is tested with the following scenarios:
 ## Summary
 
 The current `WaveformConfig` provides a simple, expressive, and extensible representation of waveform characteristics. It serves as the foundational domain object for signal generation while maintaining a clear separation between domain concepts and implementation details.
+
+---
+
+# Simulator UI Plan
+
+## Goal
+
+Introduce a minimal UI that allows users to enter a free-form text request (e.g. "generate 1000khz square wave with 25% duty cycle"), route it through an agent, execute the simulator, and visualize the resulting waveform.
+
+This must integrate cleanly with the existing Scala fullstack architecture without polluting the domain layer.
+
+---
+
+## Architecture Overview
+
+Flow:
+
+1. UI sends `prompt: String` to backend
+2. Backend agent converts prompt → structured `WaveformConfig`
+3. Simulator generates `Stream[SignalState]`
+4. Stream is materialized into finite samples
+5. Response returned as JSON
+6. UI renders waveform chart
+
+Key constraint: the **domain remains unchanged**. All parsing and AI logic lives outside it.
+
+---
+
+## Backend Changes (http4s)
+
+### 1. New Route: `/simulate`
+
+Add a new route alongside `QuickstartRoutes`:
+
+Request:
+```
+POST /simulate
+{
+  "prompt": "generate 1000khz square wave with 25% duty cycle"
+}
+```
+
+Response:
+```
+{
+  "x": [0, 10, 20, ...],
+  "y": [1, 1, 0, ...],
+  "meta": {
+    "frequencyHz": 1000000,
+    "dutyCycle": 0.25
+  }
+}
+```
+
+Keep response intentionally simple (arrays only).
+
+---
+
+### 2. Agent Layer (New)
+
+Create a small module:
+
+```
+server/src/main/scala/com/alai/muhil/agent/
+```
+
+Responsibility:
+
+- Convert free-form text → `WaveformConfig`
+- Normalize units (kHz → Hz, % → fraction)
+- Apply defaults
+
+Example output:
+
+```
+WaveformConfig(
+  frequencyHz = 1_000_000,
+  dutyCycle = 0.25,
+  initialState = 1
+)
+```
+
+Important: keep this deterministic for now (regex / parser). Do NOT tightly couple to LLM yet.
+
+---
+
+### 3. Simulation Adapter
+
+Current simulator returns an infinite `Stream`.
+
+Add a helper:
+
+```
+def sample(
+  config: WaveformConfig,
+  durationMs: Long,
+  sampleIntervalMs: Long
+): Vector[(Long, Double)]
+```
+
+Responsibilities:
+
+- Take first N samples
+- Attach timestamps
+- Convert to strict collection
+
+This keeps streaming model intact while making it UI-friendly.
+
+---
+
+## Frontend Plan (Scala.js)
+
+Assumption: project uses Scala.js (coreJS present).
+
+### 1. New Page: Simulator
+
+Add a simple UI module:
+
+```
+ui/src/main/scala/.../SimulatorPage.scala
+```
+
+Components:
+
+- TextArea (prompt input)
+- Run button
+- Chart container
+- Status (loading / error)
+
+---
+
+### 2. Charting
+
+Use a JS facade for one of:
+
+- Plotly.js (recommended)
+- Chart.js
+
+Plot:
+
+- X: time (ms)
+- Y: signal value (0/1)
+
+Keep it minimal: single trace, no heavy styling.
+
+---
+
+### 3. API Client
+
+Add small client wrapper:
+
+```
+def simulate(prompt: String): Future[SimulationResult]
+```
+
+Decode JSON → case class.
+
+---
+
+## Data Contracts
+
+Define shared DTO (optionally in shared module):
+
+```
+case class SimulationRequest(prompt: String)
+
+case class SimulationResponse(
+  x: Vector[Long],
+  y: Vector[Double]
+)
+```
+
+Avoid exposing `WaveformConfig` directly to UI.
+
+---
+
+## Incremental Plan
+
+### Phase 1 (MVP)
+
+- Add `/simulate` route
+- Hardcode parser (support: frequency + duty cycle)
+- Sample 1–2 seconds of data
+- Render basic chart
+
+### Phase 2
+
+- Improve parsing (units, defaults)
+- Add error handling
+- Show parsed config in UI
+
+### Phase 3
+
+- Add waveform types (sine, triangle)
+- Introduce real LLM-backed agent
+- Support multiple plots
+
+---
+
+## Key Design Rules
+
+- Domain (`WaveformConfig`) remains pure and unchanged
+- Agent is replaceable (rule-based → AI later)
+- Simulator remains stream-based
+- UI only consumes sampled data
+
+---
+
+## Risks / Considerations
+
+- Very high frequencies vs fixed sample interval (aliasing)
+- Large datasets freezing browser → limit sample count
+- Ambiguous prompts → require sensible defaults
+
+---
+
+## Next Step
+
+Implement backend `/simulate` + sampling helper first. UI can be added immediately after with mocked data if needed.

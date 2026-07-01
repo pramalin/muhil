@@ -4,11 +4,13 @@
 		"build": "parcel build index.html --dist-dir dist --log-level info"
 	},
 	"devDependencies": {
+		"buffer": "^6.0.3",
 		"parcel": "^2.1.0",
 		"process": "^0.11.10",
 		"sass": "^1.34.0"
 	},
 	"dependencies": {
-		"moment": "^2.30.1"
+		"moment": "^2.30.1",
+		"plotly.js-dist-min": "^3.6.0"
 	}
 }

@@ -8,6 +8,7 @@ import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.middleware.Logger
+import org.http4s.server.middleware.CORS
 
 object QuickstartServer:
 
@@ -21,11 +22,13 @@ object QuickstartServer:
       // want to extract segments not checked
       // in the underlying routes.
       httpApp = (
-        QuickstartRoutes.helloWorldRoutes[F](helloWorldAlg)
+        QuickstartRoutes.helloWorldRoutes[F](helloWorldAlg) <+>
+        QuickstartRoutes.simulationRoutes[F]
       ).orNotFound
 
       // With Middlewares in place
-      finalHttpApp = Logger.httpApp(true, true)(httpApp)
+      corsApp = CORS.policy.withAllowOriginAll(httpApp)
+      finalHttpApp = Logger.httpApp(true, true)(corsApp)
 
       _ <- 
         EmberServerBuilder.default[F]
